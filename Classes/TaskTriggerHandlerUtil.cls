@@ -3,21 +3,21 @@ public class TaskTriggerHandlerUtil {
     public static void updateTasks(List<Task> newItems,Map<Id,Task>oldItemsMap){
         
         List<Account> accountsToUpdate = new List<Account>();
-        
+        Set<Id>accIds = new Set<Id>();
         Set<Id> completedTaskIds = new Set<Id>();
         for (Task task : newItems) {
             Task oldTask = oldItemsMap.get(task.Id);
             if (task.Status == 'Completed' && oldTask.Status != 'Completed') {
                 completedTaskIds.add(task.Id);
+                accIds.add(task.whatId);
             }
         }
         
-        Map<Id, Task> tasksMap = new Map<Id, Task>([SELECT Id, Subject, WhatId, Description FROM Task WHERE Id IN :completedTaskIds]);
-        Map<Id, Account> accountsMap = new Map<Id, Account>([SELECT Id, Active__c, Description FROM Account WHERE Id IN :tasksMap.KeySet()]);
+        Map<Id, Account> accountsMap = new Map<Id, Account>([SELECT Id, Active__c, Description FROM Account WHERE Id IN :accIds]);
         Boolean isAssigned = [SELECT COUNT() FROM PermissionSetAssignment WHERE AssigneeId = :UserInfo.getUserId() AND PermissionSet.Name = 'CQ Account Admin'] > 0;
         
         if(isAssigned){
-            for (Task task : tasksMap.values()) {
+            for (Task task : newItems) {
                 if (task.Subject.startsWith('Review Account- ')) {
                     Account associatedAccount = accountsMap.get(task.WhatId);
                     
